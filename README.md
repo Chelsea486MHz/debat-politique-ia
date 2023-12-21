@@ -14,6 +14,16 @@ Par défaut, les débats sont animés par Jean-Luc Mélenchon et Eric Zemmour, e
 
 Nos récepteurs de dopamines grillés par TikTok ne sont plus capables d'attendre 6 mois entre chaque débat intéressant, on doit bien trouver des solutions pour se divertir.
 
+## Architecture
+
+Chaque interlocuteur est conçu comme bot Discord. Ils interagissent sur un serveur leur étant dédié.
+
+Les conversations sont générées en requêtant l'API OpenAI.
+
+L'audio est généré à partir des complétions OpenAI par un webservice flask basé sur XTTSv2.
+
+Un serveur MariaDB est inclus pour authentifier les requêtes vers XTTS en utilisant un token.
+
 ## Pré-requis
 
 Le système est assez complexe, mais si vous savez ce que vous faites vous devrez pouvoir l'étaler sur plusieurs machines ou pods k8s.
@@ -72,16 +82,6 @@ Hash le token:
 Modifier `sql/init.sql` pour insérer le token dans la db:
 
 `INSERT INTO tokens VALUES ('YOUR_HASH');`
-
-## Architecture
-
-Chaque interlocuteur est conçu comme bot Discord. Ils interagissent sur un serveur leur étant dédié.
-
-Les conversations sont générées en requêtant l'API OpenAI.
-
-L'audio est généré à partir des complétions OpenAI par un webservice flask basé sur XTTSv2.
-
-Un serveur MariaDB est inclus pour authentifier les requêtes vers XTTS en utilisant un token.
 
 ## Commentaires de l'autrice
 
