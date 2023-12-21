@@ -1,0 +1,6 @@
+bot/node_modules
+xtts/__pycache__
+xtts/venv
+xtts/output.wav
+models/tts_models--multilingual--multi-dataset--xtts_v2
+.env

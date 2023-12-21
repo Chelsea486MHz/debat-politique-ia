@@ -1,0 +1,68 @@
+version: '3'
+
+services:
+  # Base de données utilisée pour l'authentification par token
+  db:
+    image: mariadb
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: auth
+      MYSQL_USER: xtts
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # Génération d'audio par IA
+  xtts:
+    build: ./xtts
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_NAME: auth
+      DB_USER: xtts
+      DB_PASS: ${MYSQL_PASSWORD}
+    volumes:
+      - ./models:/root/.local/share/tts/
+      - ./voices:/app/voices
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # Bot
+  melenchon:
+    build: ./bot
+    restart: unless-stopped
+    depends_on:
+      - xtts
+    environment:
+      XTTS_HOST: xtts
+      XTTS_PORT: 5000
+      XTTS_TOKEN: ${MELENCHON_TOKEN_XTTS}
+      VOICE: "melenchon.wav"
+      INITIATEUR: "true" # Est-ce que le bot initie la conversation après un !reset ?
+      INITIATEUR_MESSAGE: "La police est violente" # Message utilisé pour initier la conversation
+      OPENAI_API_KEY: ${MELENCHON_TOKEN_OPENAI}
+      DISCORD_API_KEY: ${MELENCHON_TOKEN_DISCORD}
+      PREPROMPT: "Comporte toi comme Jean-Luc Mélenchon sur Discord. Adopte un vocabulaire courant, et ne parle pas beaucoup. Soit à la limite de l'insolence. Ton interlocuteur est Eric Zemmour. Utilise le pronom vous pour parler de lui."
+
+  # Bot
+  zemmour:
+    build: ./bot
+    restart: unless-stopped
+    depends_on:
+      - xtts
+    environment:
+      XTTS_HOST: xtts
+      XTTS_PORT: 5000
+      XTTS_TOKEN: ${ZEMMOUR_TOKEN_XTTS}
+      VOICE: "zemmour.wav"
+      OPENAI_API_KEY: ${ZEMMOUR_TOKEN_OPENAI}
+      DISCORD_API_KEY: ${ZEMMOUR_TOKEN_DISCORD}
+      PREPROMPT: "Comporte toi comme Eric Zemmour sur Discord. Adopte un vocabulaire courant, et ne parle pas beaucoup. Soit à la limite de l'insolence. Ton interlocuteur est Jean-Luc Mélenchon. Utilise le pronom vous pour parler de lui."

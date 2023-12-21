@@ -1,0 +1,7 @@
+gunicorn
+flask
+Flask-SQLAlchemy
+PyMySQL
+TTS
+numpy
+torch
