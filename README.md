@@ -95,6 +95,13 @@ Modifier `sql/init.sql` pour insérer le token dans la db:
 
 `INSERT INTO tokens VALUES ('YOUR_HASH');`
 
+Les tokens par défaut sont :
+
+```
+MELENCHON_TOKEN_XTTS="hvcyntF4SMqRCSXWGz5p-4H0vag9tvFyz2GXOTOXZ7XjLcsSaPbvrq2ziFxzDaMl"
+ZEMMOUR_TOKEN_XTTS="utK9pJVPbDcinnxLw-qA-83Nct2BrzB255eQfLv5XytupEX8Q4ARw4gRhgAA8PF9"
+```
+
 ## Commentaires de l'autrice
 
 Je recommande d'ajouter un token pour chaque bot, contrôle d'accès traçabilité toussa toussa.
