@@ -58,10 +58,9 @@ def generate_step():
 
     # Generate audio
     print('Generating audio')
-    base_voice_path = f"/app/voices/{requested_voice}"
     tts.tts_to_file(text=requested_text,
                     file_path="output.wav",
-                    speaker_wav=base_voice_path,
+                    speaker_wav=requested_voice,
                     language="fr")
 
     # Return the audio file

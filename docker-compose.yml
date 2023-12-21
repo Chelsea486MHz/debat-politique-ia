@@ -26,7 +26,6 @@ services:
       DB_PASS: ${MYSQL_PASSWORD}
     volumes:
       - ./models:/root/.local/share/tts/
-      - ./voices:/app/voices
     deploy:
       resources:
         reservations:
