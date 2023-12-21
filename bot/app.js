@@ -135,11 +135,9 @@ client.on("messageCreate", async message => {
 	// Handle resets
 	else if (message.content.startsWith("!reset")) {
 		console.log('Restarting the bot.');
-		audioPlayerStatus = "idle"
 		messageHistory = [{role: "system", content: process.env.PREPROMPT}];
-		if (process.env.INITIATEUR === "true")
-		{
-			await replyWithVoice(message, process.env.INITIATEUR_MESSAGE);
+		if (process.env.INITIATEUR === "true") {
+			await replyWithVoice(message.content.substring("!reset".length).trim());
 		}
 	}
 

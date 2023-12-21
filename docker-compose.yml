@@ -47,7 +47,6 @@ services:
       XTTS_TOKEN: ${MELENCHON_TOKEN_XTTS}
       VOICE: "melenchon.wav"
       INITIATEUR: "true" # Est-ce que le bot initie la conversation après un !reset ?
-      INITIATEUR_MESSAGE: "La police est violente" # Message utilisé pour initier la conversation
       OPENAI_API_KEY: ${MELENCHON_TOKEN_OPENAI}
       DISCORD_API_KEY: ${MELENCHON_TOKEN_DISCORD}
       PREPROMPT: "Comporte toi comme Jean-Luc Mélenchon sur Discord. Adopte un vocabulaire courant, et ne parle pas beaucoup. Soit à la limite de l'insolence. Ton interlocuteur est Eric Zemmour. Utilise le pronom vous pour parler de lui."

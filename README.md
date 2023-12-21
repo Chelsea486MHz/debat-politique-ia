@@ -65,9 +65,21 @@ Une fois le téléchargement terminé, éxécutez la commande :
 
 `$ docker compose up -d`
 
-Vous pouvez maintenant rejoindre le serveur Discord utilisé par vos bots, rejoindre un canal vocal, et éxécuter la commande `!reset`.
+## Utilisation
 
-L'éxécution de cette commande remet les bots à zéro. L'initiateur de conversation (configurable dans `docker-compose.yml`) va ensuite relancer le sujet.
+Vous pouvez maintenant rejoindre le serveur Discord utilisé par vos bots, rejoindre un canal vocal, et éxécuter la commande `!reset` suivie des mots qui seront prononcés par l'initiateur de conversation (à défaut, Mélenchon (configurable dans `docker-compose.yml`)).
+
+Par exemple, pour que Mélenchon lance le débat avec Zemmour sur le sujet des violences policières :
+
+`! reset La police est violente`
+
+Mélenchon prononcera "La police est violente" et Zemmour répondra.
+
+## Lenteur
+
+Oui, c'est lent. Il faut inférer un modèle d'IA à chaque tour de parole, ce n'est pas rapide.
+
+Temp d'éxécution pour un temps de parole sur Ryzen 5700X / 64 Go RAM / RTX 3060 12 Go : 1-2 min
 
 ## Ajout d'un token
 
