@@ -28,12 +28,10 @@ async function getAudio(textToSpeak) {
 	console.log('Requesting WAV');
 
     try {
-        const response = await axios.post(url,
-										{ text: textToSpeak, voice: process.env.VOICE },
-											{ headers: { 'Content-Type': 'application/json',
-											             'Authorization': process.env.XTTS_TOKEN },
-										  responseType: 'arraybuffer' 
-										}
+        const response = await axios.post(
+			url,
+			{ text: textToSpeak, voice: process.env.VOICE },
+			{ headers: { 'Content-Type': 'application/json', 'Authorization': process.env.XTTS_TOKEN }, responseType: 'arraybuffer' }
 		);
 
         // Save the response as an WAV file
@@ -100,8 +98,8 @@ async function replyWithVoice(message, response)
 	
 		audioPlayer.play(audioResource);
 		connection.subscribe(audioPlayer);
-		message.channel.send(response);
 		await new Promise(resolve => setTimeout(resolve, 20000));
+		message.channel.send(response);
 	} catch (error) {
 		console.error('Error occurred while playing audio:', error);
 		message.channel.send("An error occurred while playing audio.");
