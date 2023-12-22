@@ -1,2 +1,0 @@
-xtts/voices/melenchon.wav filter=lfs diff=lfs merge=lfs -text
-xtts/voices/zemmour.wav filter=lfs diff=lfs merge=lfs -text

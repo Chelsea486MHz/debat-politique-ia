@@ -41,7 +41,6 @@ def generate_step():
 
     # Validate the hashed authorization token against the database
     hashed_token = hashlib.sha256(token.encode()).hexdigest()
-    print(hashed_token)
     if not Token.query.filter_by(token=hashed_token).first():
         print('Authentication failed')
         return 'Unauthorized', 401
@@ -50,11 +49,10 @@ def generate_step():
     # Extract the text from the request
     try:
         request_variables = request.json
-        requested_text = request_variables.get('text')
+        requested_text = request_variables.get('texttospeak')
         requested_voice = request_variables.get('voice')
     except Exception as e:
-        print('Request incorrectly formulated')
-        return f"Malformed request. Error: {e}", 400
+        return f"Error: {e}", 400
 
     # Generate audio
     print('Generating audio')

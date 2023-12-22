@@ -24,8 +24,6 @@ services:
       DB_NAME: auth
       DB_USER: xtts
       DB_PASS: ${MYSQL_PASSWORD}
-    volumes:
-      - ./models:/root/.local/share/tts/
     deploy:
       resources:
         reservations:

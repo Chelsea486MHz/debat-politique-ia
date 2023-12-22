@@ -9,6 +9,3 @@ bind = "0.0.0.0:5000"
 # May thread starve /!\
 workers = 1
 timeout = 120
-
-# Log on stdout
-log_file = "-"

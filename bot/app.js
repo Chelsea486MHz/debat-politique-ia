@@ -4,7 +4,7 @@ const { Configuration, OpenAIApi } = require("openai");
 const Discord = require('discord.js');
 const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus } = require('@discordjs/voice');
 const { formatWithOptions } = require('util');
-
+const { execSync } = require('child_process');
 
 
 
@@ -30,7 +30,7 @@ async function getAudio(textToSpeak) {
     try {
         const response = await axios.post(
 			url,
-			{ text: textToSpeak, voice: process.env.VOICE },
+			{ texttospeak: textToSpeak, voice: process.env.VOICE },
 			{ headers: { 'Content-Type': 'application/json', 'Authorization': process.env.XTTS_TOKEN }, responseType: 'arraybuffer' }
 		);
 
@@ -98,7 +98,12 @@ async function replyWithVoice(message, response)
 	
 		audioPlayer.play(audioResource);
 		connection.subscribe(audioPlayer);
-		await new Promise(resolve => setTimeout(resolve, 20000));
+
+		// Wait for the duration of the audio
+		duration = 1000 * parseFloat(execSync(`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ${audioPath}`));
+		await new Promise(resolve => setTimeout(resolve, duration));
+
+		// Reply by text so the other bot replies
 		message.channel.send(response);
 	} catch (error) {
 		console.error('Error occurred while playing audio:', error);
@@ -139,7 +144,7 @@ client.on("messageCreate", async message => {
 		messageHistory = [{role: "system", content: process.env.PREPROMPT}];
 		messageHistory.push({role: "assistant", content: topic});
 		if (process.env.INITIATEUR === "true") {
-			await replyWithVoice(topic);
+			await replyWithVoice(message, topic);
 		}
 	}
 

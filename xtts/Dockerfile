@@ -1,5 +1,16 @@
 #
-# Build image
+# AI model image
+#
+FROM python:3.11 AS image-model
+RUN apt update
+RUN apt install -y --no-install-recommends \
+    git \
+    git-lfs
+RUN git lfs install
+RUN git clone https://huggingface.co/coqui/XTTS-v2
+
+#
+# Python deps image
 #
 FROM python:3.11 AS image-build
 
@@ -9,6 +20,8 @@ RUN apt install -y --no-install-recommends \
     gcc
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
+
+# Download the Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -22,8 +35,10 @@ ENV DEBUG False
 WORKDIR /app
 EXPOSE 5000
 ENV COQUI_TOS_AGREED=1
+ENV PYTHONUNBUFFERED=1
 
 # Install dependencies from the build image venv
+COPY --from=image-model /XTTS-v2/ /root/.local/share/tts/tts_models--multilingual--multi-dataset--xtts_v2/
 COPY --from=image-build /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 

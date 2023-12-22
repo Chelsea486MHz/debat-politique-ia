@@ -57,11 +57,11 @@ Le token Discord correspond à celui du bot. Chaque personnage doit avoit son pr
 
 Se référer à la section suivante pour apprendre à générer des tokens XTTS.
 
-Il faut télécharger le modèle XTTSv2 avant d'effectuer des requêtes pour l'inférer. Pour ce faire, démarrez le conteneur XTTS seul et attendez qu'il termine son téléchargement :
+Vous pouvez maintenant construire les images Docker. Le premier build est lent car les modèles d'IA se font télécharger, mais les builds suivants seront plus rapides car le modèle sera en cache sur votre machine.
 
-`$ docker compose up xtts`
+`$ docker compose build`
 
-Une fois le téléchargement terminé, éxécutez la commande :
+Vous pouvez à présent démarrer le stack de services. Le flag `-d` est utilisé pour les faire tourner en fond:
 
 `$ docker compose up -d`
 

@@ -1,5 +1,9 @@
 FROM node:18
 
+# Install ffmpeg
+RUN apt update
+RUN apt install -y ffmpeg
+
 # Configure app directory
 RUN mkdir -p /home/node/app/node_modules && \
     chown -R node:node /home/node/app
@@ -7,7 +11,7 @@ RUN mkdir -p /home/node/app/node_modules && \
 WORKDIR /home/node/app
 EXPOSE 8080
 
-# Install dependencies
+# Install npm dependencies
 COPY package*.json ./
 RUN npm install
 
