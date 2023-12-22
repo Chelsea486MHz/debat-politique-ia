@@ -135,9 +135,11 @@ client.on("messageCreate", async message => {
 	// Handle resets
 	else if (message.content.startsWith("!reset")) {
 		console.log('Restarting the bot.');
+		topic = message.content.substring("!reset".length).trim();
 		messageHistory = [{role: "system", content: process.env.PREPROMPT}];
+		messageHistory.push({role: "assistant", content: topic});
 		if (process.env.INITIATEUR === "true") {
-			await replyWithVoice(message.content.substring("!reset".length).trim());
+			await replyWithVoice(topic);
 		}
 	}
 
