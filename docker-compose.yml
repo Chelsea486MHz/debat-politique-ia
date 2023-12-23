@@ -7,13 +7,13 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: auth
-      MYSQL_USER: xtts
+      MYSQL_USER: dpaas
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
       - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
 
-  # Génération d'audio par IA
+  # Génération TTS par IA
   xtts:
     build: ./xtts
     restart: unless-stopped
@@ -22,7 +22,7 @@ services:
     environment:
       DB_HOST: db
       DB_NAME: auth
-      DB_USER: xtts
+      DB_USER: dpaas
       DB_PASS: ${MYSQL_PASSWORD}
     deploy:
       resources:
@@ -39,9 +39,8 @@ services:
     depends_on:
       - xtts
     environment:
-      XTTS_HOST: xtts
-      XTTS_PORT: 5000
-      XTTS_TOKEN: ${MELENCHON_TOKEN_XTTS}
+      XTTS_ENDPOINT: "http://xtts:5000/generate"
+      DPAAS_TOKEN: ${MELENCHON_TOKEN_DPAAS}
       VOICE: "melenchon.wav"
       INITIATEUR: "true" # Est-ce que le bot initie la conversation après un !reset ?
       OPENAI_API_KEY: ${MELENCHON_TOKEN_OPENAI}
@@ -55,9 +54,8 @@ services:
     depends_on:
       - xtts
     environment:
-      XTTS_HOST: xtts
-      XTTS_PORT: 5000
-      XTTS_TOKEN: ${ZEMMOUR_TOKEN_XTTS}
+      XTTS_ENDPOINT: "http://xtts:5000/generate"
+      DPAAS_TOKEN: ${ZEMMOUR_TOKEN_DPAAS}
       VOICE: "zemmour.wav"
       OPENAI_API_KEY: ${ZEMMOUR_TOKEN_OPENAI}
       DISCORD_API_KEY: ${ZEMMOUR_TOKEN_DISCORD}

@@ -23,27 +23,21 @@ const audioPlayer = createAudioPlayer();
 
 // Get TTS audio
 async function getAudio(textToSpeak) {
-    const url = `http://${process.env.XTTS_HOST}:${process.env.XTTS_PORT}/generate`;
-
 	console.log('Requesting WAV');
 
     try {
         const response = await axios.post(
-			url,
+			process.env.XTTS_ENDPOINT,
 			{ texttospeak: textToSpeak, voice: process.env.VOICE },
-			{ headers: { 'Content-Type': 'application/json', 'Authorization': process.env.XTTS_TOKEN }, responseType: 'arraybuffer' }
+			{ headers: { 'Content-Type': 'application/json', 'Authorization': process.env.DPAAS_TOKEN }, responseType: 'arraybuffer' }
 		);
-
-        // Save the response as an WAV file
-        const filePath = './output.wav';
-		require('fs').writeFileSync(filePath, response.data);
-
-        console.log('Audio file downloaded successfully.');
-        return filePath;
+		require('fs').writeFileSync('./output.wav', response.data);
     } catch (error) {
         console.error('Error occurred while downloading the audio file:', error);
         throw error;
     }
+
+	console.log('Audio file downloaded successfully.');
 }
 
 
@@ -86,8 +80,9 @@ async function runCompletion(gptprompt) {
 async function replyWithVoice(message, response)
 {
 	const voiceChannel = message.member?.voice.channel;
-	const audioPath = await getAudio(response)
-	const audioResource = createAudioResource(audioPath);
+	const audioResource = createAudioResource('./output.wav');
+
+	await getAudio(response)
 
 	try {
 		connection = joinVoiceChannel({
@@ -100,7 +95,7 @@ async function replyWithVoice(message, response)
 		connection.subscribe(audioPlayer);
 
 		// Wait for the duration of the audio
-		duration = 1000 * parseFloat(execSync(`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ${audioPath}`));
+		duration = 1000 * parseFloat(execSync(`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ${'./output.wav'}`));
 		await new Promise(resolve => setTimeout(resolve, duration));
 
 		// Reply by text so the other bot replies

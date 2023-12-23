@@ -42,11 +42,11 @@ Une utilisation normale ne demande qu'à créer un fichier `.env` à la racine d
 MYSQL_PASSWORD="..."
 MYSQL_ROOT_PASSWORD="..."
 
-MELENCHON_TOKEN_XTTS="..."
+MELENCHON_TOKEN_DPAAS="..."
 MELENCHON_TOKEN_OPENAI="..."
 MELENCHON_TOKEN_DISCORD="..."
 
-ZEMMOUR_TOKEN_XTTS="..."
+ZEMMOUR_TOKEN_DPAAS="..."
 ZEMMOUR_TOKEN_OPENAI="..."
 ZEMMOUR_TOKEN_DISCORD="..."
 ```
@@ -55,7 +55,7 @@ Utilisez votre propre token OpenAI, ou bien un que vous avez générer avec Basa
 
 Le token Discord correspond à celui du bot. Chaque personnage doit avoit son propre bot Discord.
 
-Se référer à la section suivante pour apprendre à générer des tokens XTTS.
+Se référer à la section suivante pour apprendre à générer des tokens DPAAS.
 
 Vous pouvez maintenant construire les images Docker. Le premier build est lent car les modèles d'IA se font télécharger, mais les builds suivants seront plus rapides car le modèle sera en cache sur votre machine.
 
@@ -81,7 +81,9 @@ Oui, c'est lent. Il faut inférer un modèle d'IA à chaque tour de parole, ce n
 
 Temp d'éxécution pour un temps de parole sur Ryzen 5700X / 64 Go RAM / RTX 3060 12 Go : 1-2 min
 
-## Ajout d'un token
+## Ajout d'un token DPAAS
+
+Certains composants de DPaaS comme la génération par IA sont gourmands en ressources et bénéficient de fonctionner en bare-metal sur des machines dédiées sur un réseau local ou à distance. Dans le cas d'usage où les machines sont à distance, il est vital de protéger les services en authentifiant les requêtes avec un token pour éviter les attaques par déni de service. Cependant, l'authentification par token ne peut être efficace que lorsqu'associée à un tunnel chiffré, je recommande donc vivement de cacher les services derrière un reverse-proxy.
 
 Générer un token:
 
