@@ -5,7 +5,8 @@ FROM python:3.11 AS image-model
 RUN apt update
 RUN apt install -y --no-install-recommends \
     git \
-    git-lfs
+    git-lfs \
+    lame
 RUN git lfs install
 RUN git clone https://huggingface.co/coqui/XTTS-v2
 
