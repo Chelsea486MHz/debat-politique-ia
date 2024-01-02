@@ -31,7 +31,7 @@ async function getAudio(textToSpeak) {
 			{ texttospeak: textToSpeak, voice: process.env.VOICE },
 			{ headers: { 'Content-Type': 'application/json', 'Authorization': process.env.DPAAS_TOKEN }, responseType: 'arraybuffer' }
 		);
-		require('fs').writeFileSync('./output.wav', response.data);
+		require('fs').writeFileSync('./output.mp3', response.data);
     } catch (error) {
         console.error('Error occurred while downloading the audio file:', error);
         throw error;
@@ -80,7 +80,7 @@ async function runCompletion(gptprompt) {
 async function replyWithVoice(message, response)
 {
 	const voiceChannel = message.member?.voice.channel;
-	const audioResource = createAudioResource('./output.wav');
+	const audioResource = createAudioResource('./output.mp3');
 
 	await getAudio(response)
 
@@ -95,7 +95,7 @@ async function replyWithVoice(message, response)
 		connection.subscribe(audioPlayer);
 
 		// Wait for the duration of the audio
-		duration = 1000 * parseFloat(execSync(`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ${'./output.wav'}`));
+		duration = 1000 * parseFloat(execSync(`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ${'./output.mp3'}`));
 		await new Promise(resolve => setTimeout(resolve, duration));
 
 		// Reply by text so the other bot replies

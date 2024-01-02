@@ -5,8 +5,7 @@ FROM python:3.11 AS image-model
 RUN apt update
 RUN apt install -y --no-install-recommends \
     git \
-    git-lfs \
-    lame
+    git-lfs
 RUN git lfs install
 RUN git clone https://huggingface.co/coqui/XTTS-v2
 
@@ -18,7 +17,8 @@ FROM python:3.11 AS image-build
 RUN apt update
 RUN apt install -y --no-install-recommends \
     build-essential \
-    gcc
+    gcc \
+    lame
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
@@ -30,6 +30,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Production image
 #
 FROM python:3.11
+
+# Install audio transcoder
+RUN apt update
+RUN apt install -y --no-install-recommends lame
 
 # App settings
 ENV DEBUG False

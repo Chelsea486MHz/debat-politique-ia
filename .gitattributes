@@ -1,0 +1,2 @@
+xtts/voices/melenchon-light.wav filter=lfs diff=lfs merge=lfs -text
+xtts/voices/zemmour-light.wav filter=lfs diff=lfs merge=lfs -text

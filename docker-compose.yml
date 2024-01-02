@@ -41,7 +41,7 @@ services:
     environment:
       XTTS_ENDPOINT: "http://xtts:5000/generate"
       DPAAS_TOKEN: ${MELENCHON_TOKEN_DPAAS}
-      VOICE: "melenchon.wav"
+      VOICE: "melenchon-light.wav"
       INITIATEUR: "true" # Est-ce que le bot initie la conversation après un !reset ?
       OPENAI_API_KEY: ${MELENCHON_TOKEN_OPENAI}
       DISCORD_API_KEY: ${MELENCHON_TOKEN_DISCORD}
@@ -56,7 +56,7 @@ services:
     environment:
       XTTS_ENDPOINT: "http://xtts:5000/generate"
       DPAAS_TOKEN: ${ZEMMOUR_TOKEN_DPAAS}
-      VOICE: "zemmour.wav"
+      VOICE: "zemmour-light.wav"
       OPENAI_API_KEY: ${ZEMMOUR_TOKEN_OPENAI}
       DISCORD_API_KEY: ${ZEMMOUR_TOKEN_DISCORD}
       PREPROMPT: "Comporte toi comme Eric Zemmour sur Discord. Adopte un vocabulaire courant, et ne parle pas beaucoup. Soit à la limite de l'insolence. Ton interlocuteur est Jean-Luc Mélenchon. Utilise le pronom vous pour parler de lui."
