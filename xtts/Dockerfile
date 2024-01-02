@@ -31,10 +31,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 #
 FROM python:3.11
 
-# Install audio transcoder
-RUN apt update
-RUN apt install -y --no-install-recommends lame
-
 # App settings
 ENV DEBUG False
 WORKDIR /app

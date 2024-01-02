@@ -1,7 +1,6 @@
 from flask import Flask, request, send_file
 from flask_sqlalchemy import SQLAlchemy
 from TTS.api import TTS
-import subprocess
 import hashlib
 import torch
 import os
@@ -62,12 +61,9 @@ def generate_step():
                     speaker_wav=requested_voice,
                     language="fr")
 
-    # Transcode audio to mp3
-    subprocess.call('/bin/lame --preset insane output.wav output.mp3', shell=False)
-
     # Return the audio file
     print('Returning audio file')
-    return send_file("output.,mp3", mimetype="audio/mpeg")
+    return send_file("output.wav", mimetype="audio/wav")
 
 
 if __name__ == '__main__':
