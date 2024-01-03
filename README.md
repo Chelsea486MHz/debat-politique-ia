@@ -87,7 +87,7 @@ Certains composants de DPaaS comme la génération par IA sont gourmands en ress
 
 Générer un token:
 
-`$ python3 -c 'import secrets; print(secrets.token_urlsafe(48));'`
+`$ python3 -c 'import secrets; print(secrets.token_urlsafe(64));'`
 
 Hash le token:
 
@@ -100,8 +100,8 @@ Modifier `sql/init.sql` pour insérer le token dans la db:
 Les tokens par défaut sont :
 
 ```
-MELENCHON_TOKEN_XTTS="hvcyntF4SMqRCSXWGz5p-4H0vag9tvFyz2GXOTOXZ7XjLcsSaPbvrq2ziFxzDaMl"
-ZEMMOUR_TOKEN_XTTS="utK9pJVPbDcinnxLw-qA-83Nct2BrzB255eQfLv5XytupEX8Q4ARw4gRhgAA8PF9"
+MELENCHON_TOKEN_DPAAS="hvcyntF4SMqRCSXWGz5p-4H0vag9tvFyz2GXOTOXZ7XjLcsSaPbvrq2ziFxzDaMl"
+ZEMMOUR_TOKEN_DPAAS="utK9pJVPbDcinnxLw-qA-83Nct2BrzB255eQfLv5XytupEX8Q4ARw4gRhgAA8PF9"
 ```
 
 ## Commentaires de l'autrice

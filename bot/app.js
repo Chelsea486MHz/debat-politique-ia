@@ -29,7 +29,7 @@ async function getAudio(textToSpeak) {
         const response = await axios.post(
 			process.env.XTTS_ENDPOINT,
 			{ texttospeak: textToSpeak, voice: process.env.VOICE },
-			{ headers: { 'Content-Type': 'application/json', 'Authorization': process.env.DPAAS_TOKEN }, responseType: 'arraybuffer' }
+			{ headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.DPAAS_TOKEN}` }, responseType: 'arraybuffer' }
 		);
 		require('fs').writeFileSync('./output.wav', response.data);
     } catch (error) {
