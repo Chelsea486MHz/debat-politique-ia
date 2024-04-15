@@ -28,8 +28,18 @@ async function getAudio(textToSpeak) {
     try {
         const response = await axios.post(
 			process.env.XTTS_ENDPOINT,
-			{ texttospeak: textToSpeak, voice: process.env.VOICE },
-			{ headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.DPAAS_TOKEN}` }, responseType: 'arraybuffer' }
+			{
+				texttospeak: textToSpeak,
+				voice: process.env.VOICE,
+				voicefilter: process.env.VOICEFILTER
+			},
+			{
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': `Bearer ${process.env.DPAAS_TOKEN}`
+				},
+				responseType: 'arraybuffer'
+			}
 		);
 		require('fs').writeFileSync('./output.wav', response.data);
     } catch (error) {
@@ -82,7 +92,7 @@ async function replyWithVoice(message, response)
 	const voiceChannel = message.member?.voice.channel;
 	const audioResource = createAudioResource('./output.wav');
 
-	await getAudio(response)
+	audio_filename = await getAudio(response)
 
 	try {
 		connection = joinVoiceChannel({

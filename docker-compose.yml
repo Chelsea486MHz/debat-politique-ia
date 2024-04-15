@@ -1,10 +1,16 @@
 version: '3'
 
+networks:
+  network_dpaas:
+
 services:
   # Base de données utilisée pour l'authentification par token
   db:
+    container_name: dpass_db
     image: mariadb
     restart: unless-stopped
+    networks:
+      - network_dpaas
     environment:
       MYSQL_DATABASE: auth
       MYSQL_USER: dpaas
@@ -15,8 +21,11 @@ services:
 
   # Génération TTS par IA
   xtts:
+    container_name: dpass_xtts
     build: ./xtts
     restart: unless-stopped
+    networks:
+      - network_dpaas
     depends_on:
       - db
     environment:
@@ -24,6 +33,8 @@ services:
       DB_NAME: auth
       DB_USER: dpaas
       DB_PASS: ${MYSQL_PASSWORD}
+    volumes:
+      - ./xtts.log:/xtts/xtts.log
     deploy:
       resources:
         reservations:
@@ -34,14 +45,18 @@ services:
 
   # Bot
   melenchon:
+    container_name: dpass_melenchon
     build: ./bot
     restart: unless-stopped
     depends_on:
       - xtts
+    networks:
+      - network_dpaas
     environment:
       XTTS_ENDPOINT: "http://xtts:5000/api/generate"
       DPAAS_TOKEN: ${MELENCHON_TOKEN_DPAAS}
       VOICE: "melenchon-light"
+      VOICEFILTER: "phone"
       INITIATEUR: "true" # Est-ce que le bot initie la conversation après un !reset ?
       OPENAI_API_KEY: ${MELENCHON_TOKEN_OPENAI}
       DISCORD_API_KEY: ${MELENCHON_TOKEN_DISCORD}
@@ -49,14 +64,18 @@ services:
 
   # Bot
   zemmour:
+    container_name: dpass_zemmour
     build: ./bot
     restart: unless-stopped
     depends_on:
       - xtts
+    networks:
+      - network_dpaas
     environment:
       XTTS_ENDPOINT: "http://xtts:5000/api/generate"
       DPAAS_TOKEN: ${ZEMMOUR_TOKEN_DPAAS}
       VOICE: "zemmour-light"
+      VOICEFILTER: "phone"
       OPENAI_API_KEY: ${ZEMMOUR_TOKEN_OPENAI}
       DISCORD_API_KEY: ${ZEMMOUR_TOKEN_DISCORD}
       PREPROMPT: "Comporte toi comme Eric Zemmour sur Discord. Adopte un vocabulaire courant, et ne parle pas beaucoup. Soit à la limite de l'insolence. Ton interlocuteur est Jean-Luc Mélenchon. Utilise le pronom vous pour parler de lui."

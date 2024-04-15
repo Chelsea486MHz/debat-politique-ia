@@ -1,7 +1,10 @@
 gunicorn
 flask
 Flask-SQLAlchemy
+Flask-API
 PyMySQL
 TTS
 numpy
 torch
+scipy
+Werkzeug==2.3.0

@@ -1,12 +1,21 @@
-from flask import Flask, request, send_file
+from flask import Flask, request, send_file, after_this_request
+from flask_api import status
 from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime, UTC
 from TTS.api import TTS
+import importlib
 import hashlib
+import logging
 import torch
+import uuid
 import os
 
 # Initialize Flask
 app = Flask(__name__)
+
+# Configure logging to file
+logging.basicConfig(level=logging.INFO)
+logging.basicConfig(filename='xtts.log', level=logging.INFO)
 
 # Database config
 DATABASE_HOST = os.environ.get('DB_HOST')
@@ -22,6 +31,15 @@ torch.set_num_threads(int(os.environ.get("NUM_THREADS", os.cpu_count())))
 device = "cuda" if torch.cuda.is_available() else "cpu"
 tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
 
+# Status report
+logging.info('Model:        ', tts.model_name)
+logging.info('Device:       ', device)
+if device == 'cuda':
+    logging.info('CUDA device:  ', torch.cuda.get_device_name())
+else:
+    logging.info('CPU cores:    ', os.cpu_count())
+logging.info('Server is UP and GO for requests')
+
 
 # Represents the entries in the database
 class Token(db.Model):
@@ -31,48 +49,93 @@ class Token(db.Model):
 
 
 @app.route('/api/generate', methods=['POST'])
-def generate_step():
-    # Check for token in headers
-    if not request.headers.get('Authorization'):
-        print('No authorization token provided')
-        return 'Unauthorized', 401
+def api_generate():
+    # Get the headers
+    try:
+        token = request.headers.get('Authorization')
+        content_type = request.headers.get('Content-Type')
+        # Check for token format
+        if not token.startswith('Bearer '):
+            raise Exception('Invalid authorization token format')
+        # Check for token length
+        if len(token.split(' ')[1]) != 64:
+            raise Exception('Invalid authorization token length')
+        # Check for content type
+        if content_type != 'application/json':
+            raise Exception('Invalid content type')
+    except (KeyError, Exception) as e:
+        print(e)
+        return 'Unauthorized', status.HTTP_400_BAD_REQUEST
 
-    # Check for token format
-    if not request.headers.get('Authorization').startswith('Bearer '):
-        print('Invalid authorization token format')
-        return 'Unauthorized', 401
+    # Get the request body
+    try:
+        requested_text = request.json['texttospeak']
+        requested_voice = request.json['voice']
+        requested_filter = request.json['voicefilter']
+    except KeyError as e:
+        print(e)
+        return 'Bad request', status.HTTP_400_BAD_REQUEST
 
-    # Check for token length
-    token = request.headers.get('Authorization').split(' ')[1]
-    if len(token) != 64:
-        print('Invalid authorization token length')
-        return 'Unauthorized', 401
-
-    # Validate the hashed authorization token against the database
+    # Authenticate the request
     hashed_token = hashlib.sha256(token.encode()).hexdigest()
-    if not Token.query.filter_by(token=hashed_token).first():
-        print('Authentication failed')
-        return 'Unauthorized', 401
+    try:
+        Token.query.filter_by(token=hashed_token).first()
+    except Exception as e:
+        print(e)
+        return 'Unauthorized', status.HTTP_401_UNAUTHORIZED
 
-    # Check for required fields
-    if not request.json or 'texttospeak' not in request.json.keys() or 'voice' not in request.json.keys():
-        print('Required fields are missing')
-        return 'Bad request', 400
+    # Generate a random UUID as the file name for the audio to generate
+    filename_without_ext = str(uuid.uuid1())
+    audio_file = filename_without_ext + '.wav'
 
-    # Extract the text from the request
-    requested_text = request.json.get('texttospeak')
-    requested_voice = "{}.wav".format(request.json.get('voice'))
+    # Log the request
+    logging.info(
+        '----------- BEING REQUEST REPORT -----------',
+        'UTC:              ', str(datetime.now(UTC)),
+        'Host:             ', request.remote_addr,
+        'Token:            ', hashed_token,
+        'User-Agent:       ', request.headers.get('User-Agent'),
+        'UUID:             ', filename_without_ext,
+        'Requested text:   ', requested_text,
+        'Requested voice:  ', requested_voice,
+        'Requested filter: ', requested_filter,
+        '-----------  END REQUEST REPORT  -----------'
+    )
+
+    # Verify the requested voice exists
+    # reminder: voices are .wav files located in ./voices
+    voice_file = f'/xtss/voices/{requested_voice}.wav'
+    if not os.path.exists(voice_file):
+        print('Invalid voice')
+        return 'Bad request', status.HTTP_400_BAD_REQUEST
 
     # Generate audio file
-    tts.tts_to_file(text=requested_text,
-                    file_path="output.wav",
-                    speaker_wav=requested_voice,
-                    language="fr")
+    try:
+        tts.tts_to_file(text=requested_text,
+                        file_path=audio_file,
+                        speaker_wav=voice_file,
+                        language="fr")
+    except Exception as e:
+        print(e)
+        return 'Internal error', status.HTTP_500_INTERNAL_SERVER_ERROR
+
+    # Apply requested voice filters
+    if requested_filter != 'none':
+        try:
+            module = importlib.import_module(f"filters.{requested_filter}")
+            module.filter(audio_file)
+        except module.ModuleNotFoundError:
+            print('Invalid filter')
+            return 'Bad request', status.HTTP_400_BAD_REQUEST
+
+    # Remove the audio file after the request is done
+    @after_this_request
+    def cleanup(response):
+        try:
+            os.remove(audio_file)
+        except Exception as e:
+            print(e)
+        return response
 
     # Return the audio file
-    print('Returning audio file')
-    return send_file("output.wav", mimetype="audio/wav")
-
-
-if __name__ == '__main__':
-    app.run(debug=os.environ.get('DEBUG', False))
+    return send_file(audio_file, mimetype="audio/wav"), status.HTTP_200_OK

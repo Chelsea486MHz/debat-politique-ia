@@ -33,10 +33,10 @@ FROM python:3.11
 
 # App settings
 ENV DEBUG False
-WORKDIR /app
+WORKDIR /xtts
 EXPOSE 5000
 ENV COQUI_TOS_AGREED=1
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONUNBUFFERED=0
 
 # Install dependencies from the build image venv
 COPY --from=image-model /XTTS-v2/ /root/.local/share/tts/tts_models--multilingual--multi-dataset--xtts_v2/
@@ -46,7 +46,10 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Install the app
 COPY app.py .
 COPY gunicorn_config.py .
-COPY voices/*.wav .
+COPY voices .
+COPY voices/*.wav voices/
+COPY filters .
+COPY filters/*.py filters/
 
 # Run the app
 CMD ["gunicorn", "-c", "gunicorn_config.py", "app:app"]
