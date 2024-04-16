@@ -1,5 +1,3 @@
-version: '3'
-
 networks:
   network_dpaas:
 
@@ -23,6 +21,7 @@ services:
   xtts:
     container_name: dpass_xtts
     build: ./xtts
+    image: xtts-api-server:latest
     restart: unless-stopped
     networks:
       - network_dpaas
@@ -34,7 +33,7 @@ services:
       DB_USER: dpaas
       DB_PASS: ${MYSQL_PASSWORD}
     volumes:
-      - ./xtts.log:/xtts/xtts.log
+      - ./logs/xtts:/var/log/xtts/
     deploy:
       resources:
         reservations:
@@ -47,6 +46,7 @@ services:
   melenchon:
     container_name: dpass_melenchon
     build: ./bot
+    image: dpaas-bot:latest
     restart: unless-stopped
     depends_on:
       - xtts
@@ -66,6 +66,7 @@ services:
   zemmour:
     container_name: dpass_zemmour
     build: ./bot
+    image: dpaas-bot:latest
     restart: unless-stopped
     depends_on:
       - xtts

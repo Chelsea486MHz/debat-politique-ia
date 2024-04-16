@@ -5,17 +5,17 @@ from datetime import datetime, UTC
 from TTS.api import TTS
 import importlib
 import hashlib
-import logging
+import base64
 import torch
 import uuid
 import os
 
+# Check if the logfile already exists, rename with .date if it does
+if os.path.exists('/var/log/xtts/requests.log'):
+    os.rename('/var/log/xtts/requests.log', '/var/log/xtts/requests.log.' + str(datetime.now().strftime('%Y-%m-%d')))
+
 # Initialize Flask
 app = Flask(__name__)
-
-# Configure logging to file
-logging.basicConfig(level=logging.INFO)
-logging.basicConfig(filename='xtts.log', level=logging.INFO)
 
 # Database config
 DATABASE_HOST = os.environ.get('DB_HOST')
@@ -30,15 +30,6 @@ db = SQLAlchemy(app)
 torch.set_num_threads(int(os.environ.get("NUM_THREADS", os.cpu_count())))
 device = "cuda" if torch.cuda.is_available() else "cpu"
 tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
-
-# Status report
-logging.info('Model:        ', tts.model_name)
-logging.info('Device:       ', device)
-if device == 'cuda':
-    logging.info('CUDA device:  ', torch.cuda.get_device_name())
-else:
-    logging.info('CPU cores:    ', os.cpu_count())
-logging.info('Server is UP and GO for requests')
 
 
 # Represents the entries in the database
@@ -65,13 +56,14 @@ def api_generate():
             raise Exception('Invalid content type')
     except (KeyError, Exception) as e:
         print(e)
-        return 'Unauthorized', status.HTTP_400_BAD_REQUEST
+        return 'Bad request', status.HTTP_400_BAD_REQUEST
 
     # Get the request body
+    # Some sanization happens here
     try:
         requested_text = request.json['texttospeak']
-        requested_voice = request.json['voice']
-        requested_filter = request.json['voicefilter']
+        requested_voice = request.json['voice'].split('/')[-1]
+        requested_filter = request.json['voicefilter'].split('/')[-1]
     except KeyError as e:
         print(e)
         return 'Bad request', status.HTTP_400_BAD_REQUEST
@@ -89,22 +81,21 @@ def api_generate():
     audio_file = filename_without_ext + '.wav'
 
     # Log the request
-    logging.info(
-        '----------- BEING REQUEST REPORT -----------',
-        'UTC:              ', str(datetime.now(UTC)),
-        'Host:             ', request.remote_addr,
-        'Token:            ', hashed_token,
-        'User-Agent:       ', request.headers.get('User-Agent'),
-        'UUID:             ', filename_without_ext,
-        'Requested text:   ', requested_text,
-        'Requested voice:  ', requested_voice,
-        'Requested filter: ', requested_filter,
-        '-----------  END REQUEST REPORT  -----------'
-    )
+    with open('/var/log/xtts/requests.log', 'a') as logfile:
+        logfile.write('report:\n')
+        logfile.write('  utc: ' + str(datetime.now(UTC)) + '\n')
+        logfile.write('  host: ' + request.remote_addr + '\n')
+        logfile.write('  token-hash: ' + hashed_token + '\n')
+        logfile.write('  user-agent: ' + request.headers.get('User-Agent') + '\n')
+        logfile.write('  uuid: ' + filename_without_ext + '\n')
+        logfile.write('  text: ' + str(base64.b64encode(bytes(requested_text.encode('utf-8')))) + '\n')
+        logfile.write('  voice: ' + requested_voice + '\n')
+        logfile.write('  filter: ' + requested_filter + '\n')
+        logfile.close()
 
     # Verify the requested voice exists
     # reminder: voices are .wav files located in ./voices
-    voice_file = f'/xtss/voices/{requested_voice}.wav'
+    voice_file = f'/xtts/voices/{requested_voice}.wav'
     if not os.path.exists(voice_file):
         print('Invalid voice')
         return 'Bad request', status.HTTP_400_BAD_REQUEST
