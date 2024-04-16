@@ -2,6 +2,8 @@ bot/node_modules
 xtts/__pycache__
 xtts/venv
 xtts/output.wav
+face-animator/__pycache__
+face-animator/venv
 models/tts_models--multilingual--multi-dataset--xtts_v2
 .env
 .env-int
