@@ -21,7 +21,7 @@ services:
   xtts:
     container_name: dpass_xtts
     build: ./xtts
-    image: xtts-api-server:latest
+    image: dpass_xtts-api-server:latest
     restart: unless-stopped
     networks:
       - network_dpaas
@@ -41,12 +41,41 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+    ports:
+      - "5000:5000"
+
+  # Génération de vidéos par IA
+  face-animator:
+    container_name: dpass_face-animator
+    build: ./face-animator
+    image: dpass_face-animator:latest
+    restart: unless-stopped
+    networks:
+      - network_dpaas
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_NAME: auth
+      DB_USER: dpaas
+      DB_PASS: ${MYSQL_PASSWORD}
+    volumes:
+      - ./logs/face-animator:/var/log/face-animator/
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    ports:
+      - "5000:5000"
 
   # Bot
   melenchon:
     container_name: dpass_melenchon
     build: ./bot
-    image: dpaas-bot:latest
+    image: dpaas_bot:latest
     restart: unless-stopped
     depends_on:
       - xtts
@@ -66,7 +95,7 @@ services:
   zemmour:
     container_name: dpass_zemmour
     build: ./bot
-    image: dpaas-bot:latest
+    image: dpaas_bot:latest
     restart: unless-stopped
     depends_on:
       - xtts

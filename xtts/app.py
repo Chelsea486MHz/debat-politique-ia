@@ -44,7 +44,6 @@ def api_generate():
     # Get the headers
     try:
         token = request.headers.get('Authorization')
-        content_type = request.headers.get('Content-Type')
         # Check for token format
         if not token.startswith('Bearer '):
             raise Exception('Invalid authorization token format')
@@ -52,19 +51,9 @@ def api_generate():
         if len(token.split(' ')[1]) != 64:
             raise Exception('Invalid authorization token length')
         # Check for content type
-        if content_type != 'application/json':
+        if request.headers.get('Content-Type') != 'application/json':
             raise Exception('Invalid content type')
     except (KeyError, Exception) as e:
-        print(e)
-        return 'Bad request', status.HTTP_400_BAD_REQUEST
-
-    # Get the request body
-    # Some sanization happens here
-    try:
-        requested_text = request.json['texttospeak']
-        requested_voice = request.json['voice'].split('/')[-1]
-        requested_filter = request.json['voicefilter'].split('/')[-1]
-    except KeyError as e:
         print(e)
         return 'Bad request', status.HTTP_400_BAD_REQUEST
 
@@ -76,22 +65,19 @@ def api_generate():
         print(e)
         return 'Unauthorized', status.HTTP_401_UNAUTHORIZED
 
+    # Get the request body
+    # Some sanization happens here
+    try:
+        requested_text = request.json['texttospeak']
+        requested_voice = request.json['voice'].split('/')[-1]
+        requested_filter = request.json['voicefilter'].split('/')[-1]
+    except KeyError as e:
+        print(e)
+        return 'Bad request', status.HTTP_400_BAD_REQUEST
+
     # Generate a random UUID as the file name for the audio to generate
     filename_without_ext = str(uuid.uuid1())
     audio_file = filename_without_ext + '.wav'
-
-    # Log the request
-    with open('/var/log/xtts/requests.log', 'a') as logfile:
-        logfile.write('report:\n')
-        logfile.write('  utc: ' + str(datetime.now(UTC)) + '\n')
-        logfile.write('  host: ' + request.remote_addr + '\n')
-        logfile.write('  token-hash: ' + hashed_token + '\n')
-        logfile.write('  user-agent: ' + request.headers.get('User-Agent') + '\n')
-        logfile.write('  uuid: ' + filename_without_ext + '\n')
-        logfile.write('  text: ' + str(base64.b64encode(bytes(requested_text.encode('utf-8')))) + '\n')
-        logfile.write('  voice: ' + requested_voice + '\n')
-        logfile.write('  filter: ' + requested_filter + '\n')
-        logfile.close()
 
     # Verify the requested voice exists
     # reminder: voices are .wav files located in ./voices
@@ -127,6 +113,19 @@ def api_generate():
         except Exception as e:
             print(e)
         return response
+
+    # Log the request
+    with open('/var/log/xtts/requests.log', 'a') as logfile:
+        logfile.write('report:\n')
+        logfile.write('  utc: ' + str(datetime.now(UTC)) + '\n')
+        logfile.write('  host: ' + request.remote_addr + '\n')
+        logfile.write('  token-hash: ' + hashed_token + '\n')
+        logfile.write('  user-agent: ' + request.headers.get('User-Agent') + '\n')
+        logfile.write('  uuid: ' + filename_without_ext + '\n')
+        logfile.write('  text: ' + str(base64.b64encode(bytes(requested_text.encode('utf-8')))) + '\n')
+        logfile.write('  voice: ' + requested_voice + '\n')
+        logfile.write('  filter: ' + requested_filter + '\n')
+        logfile.close()
 
     # Return the audio file
     return send_file(audio_file, mimetype="audio/wav"), status.HTTP_200_OK

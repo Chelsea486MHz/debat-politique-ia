@@ -1,0 +1,6 @@
+gunicorn
+flask
+Flask-SQLAlchemy
+Flask-API
+PyMySQL
+Werkzeug==2.3.0
