@@ -46,8 +46,6 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Install the app
 COPY app.py .
 COPY gunicorn_config.py .
-COPY voices .
-COPY voices/*.wav voices/
 COPY filters .
 COPY filters/*.py filters/
 

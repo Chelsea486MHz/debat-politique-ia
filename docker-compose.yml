@@ -3,6 +3,7 @@ networks:
 
 services:
   # Base de données utilisée pour l'authentification par token
+  # Seulement utilisée par les composants DPAAS
   db:
     container_name: dpass_db
     image: mariadb
@@ -16,6 +17,21 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
       - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # MinIO, stockage compatible S3 pour tout les fichiers nécessaires au stack DPAAS
+  minio:
+    container_name: dpass_minio
+    image: minio/minio
+    restart: unless-stopped
+    networks:
+      - network_dpaas
+    environment:
+      MINIO_ACCESS_KEY: ${S3_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${S3_SECRET_KEY}
+    volumes:
+      - ./s3:/data
+    command: server /data/${S3_BUCKET}
+    entrypoint: sh
 
   # Génération TTS par IA
   xtts:
@@ -32,6 +48,10 @@ services:
       DB_NAME: auth
       DB_USER: dpaas
       DB_PASS: ${MYSQL_PASSWORD}
+      S3_HOST: minio
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_BUCKET: "dpaas"
     volumes:
       - ./logs/xtts:/var/log/xtts/
     deploy:
@@ -59,6 +79,10 @@ services:
       DB_NAME: auth
       DB_USER: dpaas
       DB_PASS: ${MYSQL_PASSWORD}
+      S3_HOST: minio
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_BUCKET: "dpaas"
     volumes:
       - ./logs/face-animator:/var/log/face-animator/
     deploy:
@@ -68,44 +92,23 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
-    ports:
-      - "5000:5000"
 
-  # Bot
-  melenchon:
-    container_name: dpass_melenchon
-    build: ./bot
-    image: dpaas_bot:latest
+  # Gestionnaire de conversation
+  conversation-manager:
+    container_name: dpass_conversation-manager
+    build: ./conversation-manager
+    image: dpass_conversation-manager:latest
     restart: unless-stopped
-    depends_on:
-      - xtts
     networks:
       - network_dpaas
-    environment:
-      XTTS_ENDPOINT: "http://xtts:5000/api/generate"
-      DPAAS_TOKEN: ${MELENCHON_TOKEN_DPAAS}
-      VOICE: "melenchon-light"
-      VOICEFILTER: "phone"
-      INITIATEUR: "true" # Est-ce que le bot initie la conversation après un !reset ?
-      OPENAI_API_KEY: ${MELENCHON_TOKEN_OPENAI}
-      DISCORD_API_KEY: ${MELENCHON_TOKEN_DISCORD}
-      PREPROMPT: "Comporte toi comme Jean-Luc Mélenchon sur Discord. Adopte un vocabulaire courant, et ne parle pas beaucoup. Soit à la limite de l'insolence. Ton interlocuteur est Eric Zemmour. Utilise le pronom vous pour parler de lui."
-
-  # Bot
-  zemmour:
-    container_name: dpass_zemmour
-    build: ./bot
-    image: dpaas_bot:latest
-    restart: unless-stopped
     depends_on:
-      - xtts
-    networks:
-      - network_dpaas
+      - db
     environment:
-      XTTS_ENDPOINT: "http://xtts:5000/api/generate"
-      DPAAS_TOKEN: ${ZEMMOUR_TOKEN_DPAAS}
-      VOICE: "zemmour-light"
-      VOICEFILTER: "phone"
-      OPENAI_API_KEY: ${ZEMMOUR_TOKEN_OPENAI}
-      DISCORD_API_KEY: ${ZEMMOUR_TOKEN_DISCORD}
-      PREPROMPT: "Comporte toi comme Eric Zemmour sur Discord. Adopte un vocabulaire courant, et ne parle pas beaucoup. Soit à la limite de l'insolence. Ton interlocuteur est Jean-Luc Mélenchon. Utilise le pronom vous pour parler de lui."
+      DB_HOST: db
+      DB_NAME: auth
+      DB_USER: dpaas
+      DB_PASS: ${MYSQL_PASSWORD}
+      S3_HOST: minio
+      S3_BUCKET: "dpaas"
+    volumes:
+      - ./logs/conversation-manager:/var/log/conversation-manager/

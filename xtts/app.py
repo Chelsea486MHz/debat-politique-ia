@@ -2,20 +2,30 @@ from flask import Flask, request, send_file, after_this_request
 from flask_api import status
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, UTC
+from minio import Minio
 from TTS.api import TTS
 import importlib
 import hashlib
 import base64
 import torch
 import uuid
+import yaml
 import os
 
 # Check if the logfile already exists, rename with .date if it does
 if os.path.exists('/var/log/xtts/requests.log'):
-    os.rename('/var/log/xtts/requests.log', '/var/log/xtts/requests.log.' + str(datetime.now().strftime('%Y-%m-%d')))
+    os.rename('/var/log/xtts/requests.log', '/var/log/xtts/requests.log.' + str(datetime.now()))
 
 # Initialize Flask
 app = Flask(__name__)
+
+# MinIO config
+minio_client = Minio(
+    os.environ.get('S3_HOST'),
+    access_key=os.environ.get('S3_ACCESS_KEY'),
+    secret_key=os.environ.get('S3_SECRET_KEY'),
+    secure=False
+)
 
 # Database config
 DATABASE_HOST = os.environ.get('DB_HOST')
@@ -39,8 +49,22 @@ class Token(db.Model):
     token = db.Column(db.String(48), unique=True, nullable=False)
 
 
-@app.route('/api/generate', methods=['POST'])
-def api_generate():
+def get_voice_from_minio(voice_name):
+    voice_file = voice_name + '.wav'
+    try:
+        minio_client.fget_object(
+            os.environ.get('S3_BUCKET'),
+            'voices/' + voice_name + '.wav',
+            voice_file
+        )
+    except Exception as e:
+        print(e)
+        return None
+    return voice_file
+
+
+@app.route('/api/generate/audio', methods=['POST'])
+def api_generate_audio():
     # Get the headers
     try:
         token = request.headers.get('Authorization')
@@ -68,22 +92,56 @@ def api_generate():
     # Get the request body
     # Some sanization happens here
     try:
+        requested_actor = request.json['actor']
         requested_text = request.json['texttospeak']
-        requested_voice = request.json['voice'].split('/')[-1]
-        requested_filter = request.json['voicefilter'].split('/')[-1]
     except KeyError as e:
         print(e)
         return 'Bad request', status.HTTP_400_BAD_REQUEST
+
+    # TODO: Sanitize the input
+    # TODO: Sanitize the input
+    # TODO: Sanitize the input
+    # TODO: Sanitize the input
+    # TODO: Sanitize the input
+
+    # Get the actors file from MinIO
+    actors_file = 'actors.yml'
+    try:
+        minio_client.fget_object(
+            os.environ.get('S3_BUCKET'),
+            'actors.yml',
+            actors_file
+        )
+    except Exception as e:
+        print(e)
+        return 'Internal error', status.HTTP_500_INTERNAL_SERVER_ERROR
+
+    # Parse the actors file to get the voice and filter to use
+    try:
+        with open(actors_file, 'r') as file:
+            actors = yaml.safe_load(file)
+            requested_voice = actors[requested_actor]['voice']
+            requested_filter = actors[requested_actor]['voicefilter']
+            file.close()
+    except Exception as e:
+        print(e)
+        return 'Internal error', status.HTTP_500_INTERNAL_SERVER_ERROR
 
     # Generate a random UUID as the file name for the audio to generate
     filename_without_ext = str(uuid.uuid1())
     audio_file = filename_without_ext + '.wav'
 
-    # Verify the requested voice exists
-    # reminder: voices are .wav files located in ./voices
-    voice_file = f'/xtts/voices/{requested_voice}.wav'
-    if not os.path.exists(voice_file):
-        print('Invalid voice')
+    # Get the voice file from MinIO
+    voice_file = get_voice_from_minio(requested_voice)
+    if voice_file is None:
+        return 'Bad request', status.HTTP_400_BAD_REQUEST
+
+    # Load the voice filter
+    filter_module = None
+    try:
+        filter_module = importlib.import_module(f"filters.{requested_filter}")
+    except filter_module.ModuleNotFoundError:
+        print('Invalid filter')
         return 'Bad request', status.HTTP_400_BAD_REQUEST
 
     # Generate audio file
@@ -99,10 +157,9 @@ def api_generate():
     # Apply requested voice filters
     if requested_filter != 'none':
         try:
-            module = importlib.import_module(f"filters.{requested_filter}")
-            module.filter(audio_file)
-        except module.ModuleNotFoundError:
-            print('Invalid filter')
+            filter_module.filter(audio_file)
+        except Exception as e:
+            print(e)
             return 'Bad request', status.HTTP_400_BAD_REQUEST
 
     # Remove the audio file after the request is done

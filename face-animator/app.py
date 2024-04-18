@@ -1,6 +1,7 @@
 from flask import Flask, request, send_file, after_this_request
 from flask_api import status
 from flask_sqlalchemy import SQLAlchemy
+from minio import Minio
 from datetime import datetime
 import subprocess
 import tempfile
@@ -10,13 +11,22 @@ import os
 
 # Check if the logfile already exists, rename with .date if it does
 if os.path.exists('/var/log/face-animator/requests.log'):
-    os.rename('/var/log/face-animator/requests.log', '/var/log/face-animator/requests.log.' + str(datetime.now().strftime('%Y-%m-%d')))
+    os.rename('/var/log/face-animator/requests.log', '/var/log/face-animator/requests.log.' + str(datetime.now()))
 
 # Initialize Flask
 UPLOAD_FOLDER = tempfile.mkdtemp()
 ALLOWED_EXTENSIONS = {'wav'}
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# MinIO config
+DEFAULT_BUCKET = os.environ.get('S3_BUCKET')
+minio_client = Minio(
+    os.environ.get('S3_HOST'),
+    access_key=os.environ.get('S3_ACCESS_KEY'),
+    secret_key=os.environ.get('S3_SECRET_KEY'),
+    secure=False
+)
 
 # Database config
 DATABASE_HOST = os.environ.get('DB_HOST')
@@ -34,8 +44,22 @@ class Token(db.Model):
     token = db.Column(db.String(48), unique=True, nullable=False)
 
 
-@app.route('/api/generate', methods=['POST'])
-def api_generate():
+def get_face_from_minio(face_name, temp_folder):
+    face_file = face_name + '.png'
+    try:
+        minio_client.fget_object(
+            os.environ.get('S3_BUCKET'),
+            'faces/' + face_name + '.png',
+            os.path.join(temp_folder, face_file)
+        )
+    except Exception as e:
+        print(e)
+        return None
+    return face_file
+
+
+@app.route('/api/generate/video', methods=['POST'])
+def api_generate_video():
     # Create a directory unique to each request
     request_folder_uuid = str(uuid.uuid1())
     request_output_dir = os.mkdir(os.path.join(app.config['UPLOAD_FOLDER'], request_folder_uuid))
@@ -74,28 +98,52 @@ def api_generate():
         print(e)
         return 'Unauthorized', status.HTTP_401_UNAUTHORIZED
 
-    # Get the requested face
+    # Get the requested actor
     try:
-        requested_face = request.args.get('face')
+        requested_actor = request.args.get('actor')
     except KeyError as e:
         print(e)
         return 'Bad request 3', status.HTTP_400_BAD_REQUEST
 
-    # Sanitize the requested face
-    if not requested_face.isalnum():
-        print('Invalid face')
-        return 'Bad request', status.HTTP_400_BAD_REQUEST
-    requested_face = requested_face.split('/')[-1]
-    requested_face = '/face-animator/faces/' + requested_face + '.png'
+    # TODO: Sanitize the input
+    # TODO: Sanitize the input
+    # TODO: Sanitize the input
+    # TODO: Sanitize the input
+    # TODO: Sanitize the input
 
-    # Check if the face file exists
-    if not os.path.exists(requested_face):
-        print('Invalid face')
-        return 'Bad request 4', status.HTTP_400_BAD_REQUEST
+    # Get the actors file from MinIO
+    actors_file = 'actors.yml'
+    try:
+        minio_client.fget_object(
+            os.environ.get('S3_BUCKET'),
+            'actors.yml',
+            actors_file
+        )
+    except Exception as e:
+        print(e)
+        return 'Internal error', status.HTTP_500_INTERNAL_SERVER_ERROR
+
+    # Parse the actors file to get the face to use
+    try:
+        with open(actors_file, 'r') as file:
+            actors = yaml.safe_load(file)
+            requested_face = actors[requested_actor]['face']
+            file.close()
+    except Exception as e:
+        print(e)
+        return 'Internal error', status.HTTP_500_INTERNAL_SERVER_ERROR
+
+    # Get the face file from MinIO
+    face_file = get_face_from_minio(requested_face, request_output_dir)
+    if face_file is None:
+        return 'Bad request', status.HTTP_400_BAD_REQUEST
+
+    # Move the face file to the request directory
+    os.rename(face_file, os.path.join(request_output_dir, face_file))
 
     # Generate the video
     try:
-        args = ['python', './SadTalker/inference.py', '--driven_audio', voice_file, '--source_image', requested_face, '--results_dir', request_output_dir, '--still', '--preprocess', 'full', '--enhancer', 'gfpgan']
+        args = ['python', './SadTalker/inference.py', '--driven_audio', voice_file, '--source_image', face_file, '--results_dir', request_output_dir, '--still', '--preprocess', 'full', '--enhancer', 'gfpgan']
         subprocess.call(args)
     except Exception as e:
         print(e)
