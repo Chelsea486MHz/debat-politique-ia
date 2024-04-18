@@ -5,3 +5,5 @@ Flask-API
 PyMySQL
 Werkzeug==2.3.0
 minio
+requests
+pyyaml

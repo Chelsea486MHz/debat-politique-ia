@@ -29,8 +29,8 @@ services:
       MINIO_ACCESS_KEY: ${S3_ACCESS_KEY}
       MINIO_SECRET_KEY: ${S3_SECRET_KEY}
     volumes:
-      - ./s3:/data
-    command: server /data/${S3_BUCKET}
+      - ./s3:/data:ro
+    command: server /data/dpaas
     entrypoint: sh
 
   # Génération TTS par IA
@@ -110,5 +110,8 @@ services:
       DB_PASS: ${MYSQL_PASSWORD}
       S3_HOST: minio
       S3_BUCKET: "dpaas"
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
     volumes:
       - ./logs/conversation-manager:/var/log/conversation-manager/
+    ports:
+      - "5000:5000"

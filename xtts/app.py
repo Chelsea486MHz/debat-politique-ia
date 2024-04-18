@@ -49,20 +49,6 @@ class Token(db.Model):
     token = db.Column(db.String(48), unique=True, nullable=False)
 
 
-def get_voice_from_minio(voice_name):
-    voice_file = voice_name + '.wav'
-    try:
-        minio_client.fget_object(
-            os.environ.get('S3_BUCKET'),
-            'voices/' + voice_name + '.wav',
-            voice_file
-        )
-    except Exception as e:
-        print(e)
-        return None
-    return voice_file
-
-
 @app.route('/api/generate/audio', methods=['POST'])
 def api_generate_audio():
     # Get the headers
@@ -129,12 +115,19 @@ def api_generate_audio():
 
     # Generate a random UUID as the file name for the audio to generate
     filename_without_ext = str(uuid.uuid1())
-    audio_file = filename_without_ext + '.wav'
+    generated_audio_file = filename_without_ext + '.wav'
 
     # Get the voice file from MinIO
-    voice_file = get_voice_from_minio(requested_voice)
-    if voice_file is None:
-        return 'Bad request', status.HTTP_400_BAD_REQUEST
+    voice_file = requested_voice + '.wav'
+    try:
+        minio_client.fget_object(
+            os.environ.get('S3_BUCKET'),
+            'voices/' + voice_file,
+            voice_file
+        )
+    except Exception as e:
+        print(e)
+        return None
 
     # Load the voice filter
     filter_module = None
@@ -147,7 +140,7 @@ def api_generate_audio():
     # Generate audio file
     try:
         tts.tts_to_file(text=requested_text,
-                        file_path=audio_file,
+                        file_path=generated_audio_file,
                         speaker_wav=voice_file,
                         language="fr")
     except Exception as e:
@@ -157,7 +150,7 @@ def api_generate_audio():
     # Apply requested voice filters
     if requested_filter != 'none':
         try:
-            filter_module.filter(audio_file)
+            filter_module.filter(generated_audio_file)
         except Exception as e:
             print(e)
             return 'Bad request', status.HTTP_400_BAD_REQUEST
@@ -166,7 +159,8 @@ def api_generate_audio():
     @after_this_request
     def cleanup(response):
         try:
-            os.remove(audio_file)
+            os.remove(generated_audio_file)
+            os.remove(voice_file)
         except Exception as e:
             print(e)
         return response
@@ -185,4 +179,4 @@ def api_generate_audio():
         logfile.close()
 
     # Return the audio file
-    return send_file(audio_file, mimetype="audio/wav"), status.HTTP_200_OK
+    return send_file(generated_audio_file, mimetype="audio/wav"), status.HTTP_200_OK

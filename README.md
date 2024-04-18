@@ -42,7 +42,7 @@ Une utilisation normale ne demande qu'à créer un fichier `.env` à la racine d
 MYSQL_PASSWORD="..."
 MYSQL_ROOT_PASSWORD="..."
 
-LLM_TOKEN="..."
+OPENAI_API_KEY="..."
 DPAAS_TOKEN_1="..."
 DPAAS_TOKEN_2="..."
 

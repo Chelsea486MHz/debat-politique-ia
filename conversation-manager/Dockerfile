@@ -34,8 +34,6 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Install the app
 COPY app.py .
 COPY gunicorn_config.py .
-COPY faces .
-COPY faces/*.png faces/
 
 # Run the app
 CMD ["gunicorn", "-c", "gunicorn_config.py", "app:app"]
